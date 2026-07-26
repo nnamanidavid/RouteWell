@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RouteWell</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 80px auto; text-align: center; }
+    #subtext { color: #828789; font-size: 15px; margin-top: -8px; }
+    #count { font-size: 48px; font-weight: bold; }
+    #status { color: #63c0a4; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>RouteWell</h1>
+
+  <script>
+    function ordinal(n) {
+      const s = ["th", "st", "nd", "rd"];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    fetch("/api/visits")
+      .then(res => {
+        if (!res.ok) throw new Error("app tier responded with " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        document.getElementById("count").textContent =
+          `Welcome to Nnamani David's site for the ${ordinal(data.count)} time!`;
+      })
+      .catch(err => {
+        document.getElementById("count").textContent =
+          "Couldn't load page: " + err.message;
+      });
+  </script>
+  <p id="subtext">Refresh webpage to see something cool.</p>
+  <div id="count">Loading...</div>
+
+</body>
+</html>
