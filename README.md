@@ -24,7 +24,7 @@ DB VM ── subnet-db (10.123.3.0/28)
 
 Traffic only ever moves one direction, one hop at a time. Nothing skips a tier, and nothing reaches the database subnet from outside the app tier. A NAT Gateway gives the app and db subnets outbound-only internet access (for patching, package installs) without ever exposing them to inbound traffic.
 
-Full diagram: [`docs/architecture-route.png`](docs/architecture-route.png) 
+Full diagram: ![RouteWell architecture diagram](docs/architecture-route.png)
 
 ## Design decisions
 
