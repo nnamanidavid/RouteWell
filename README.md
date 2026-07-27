@@ -26,6 +26,35 @@ Traffic only ever moves one direction, one hop at a time. Nothing skips a tier, 
 
 Full diagram: ![RouteWell architecture diagram](docs/architecture-route.png)
 
+<details>
+<summary>Eraser diagram-as-code (click to expand)</summary>
+
+```
+Internet [icon: internet]
+
+Public Entry Point [icon: azure-application-gateway]
+
+"VNet 10.123.0.0/16" [icon: azure-virtual-networks] {
+  "Web Subnet 10.123.1.0/27" [icon: azure-subnet] {
+    WebVM [icon: azure-virtual-machine]
+  }
+  "App Subnet 10.123.2.0/28" [icon: azure-subnet] {
+    AppVM [icon: azure-virtual-machine]
+  }
+  "DB Subnet 10.123.3.0/28" [icon: azure-subnet] {
+    DBVM [icon: azure-sql]
+  }
+}
+
+Internet > Public Entry Point
+Public Entry Point > WebVM: 80
+WebVM > AppVM: 8080
+AppVM > DBVM: 5432
+```
+
+Paste this into [Eraser](https://app.eraser.io) to regenerate or edit the diagram.
+</details>
+
 ## Design decisions
 
 ### CIDR planning
@@ -68,6 +97,8 @@ Given the redesign exists *because* of a near-miss security incident, Applicatio
 ## Tech stack
 
 - **Infrastructure**: Terraform (`azurerm` provider) — chosen over the brief's suggested Bash script for idempotency and state tracking
+- **Region**: `westeurope`
+- **VM size**: `Standard_D2s_v3` (all three tiers) — see [`docs/troubleshooting.md`](docs/troubleshooting.md) for why this was the final choice after several smaller B-series sizes proved unavailable
 - **Web tier**: nginx (static frontend + reverse proxy to the app tier)
 - **App tier**: Node.js / Express
 - **DB tier**: PostgreSQL
@@ -81,7 +112,7 @@ routewell-app/
 │   ├── architecture.md      # diagram + design rationale
 │   ├── build.md              # manual Portal build + connectivity screenshots
 │   ├── automation.md         # Terraform structure + apply output
-│   └── troubleshooting.md    # the intentional-break writeup
+│   └── troubleshooting.md    # VM sizing + Postgres role issues, both with fixes
 ├── terraform/
 │   ├── provider.tf
 │   ├── main.tf                # resource group, VNet, subnets
@@ -132,9 +163,9 @@ Then open `http://localhost:8080`.
 
 Screenshots for each: [`docs/build.md`](docs/build.md).
 
-## Troubleshooting (the intentional break)
+## Troubleshooting
 
-While deploying the app tier, every request returned a 500 error. Investigation traced it to a Postgres role that was never actually created — `init.sql` had failed partway through silently. Full writeup, including how it was diagnosed and fixed: [`docs/troubleshooting.md`](docs/troubleshooting.md).
+Two real issues came up during the build, not staged ones. The Application VM size (`Standard_B1s` and several others) turned out to be unavailable across three different Azure regions in a row, eventually resolved by switching to `Standard_D2s_v3` in `westeurope`. Separately, the app tier returned a 500 error on every request post-deployment — traced to a Postgres role that had never actually been created, since `init.sql` failed partway through silently. Full write-up for both, including how each was diagnosed and fixed: [`docs/troubleshooting.md`](docs/troubleshooting.md).
 
 ## Lessons learned
 
