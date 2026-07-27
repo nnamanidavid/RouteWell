@@ -27,3 +27,15 @@ variable "subnet_app_gateway_address" {
   type    = list(string)
   default = ["10.123.4.0/27"]
 }
+
+
+variable "subscription_id" {
+  description = "Azure subscription ID"
+  type        = string
+}
+
+
+variable "ssh_public_key_path" {
+  description = "Path to the SSH public key for VM access"
+  type        = string
+}

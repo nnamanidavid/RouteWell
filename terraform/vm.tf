@@ -25,7 +25,7 @@ resource "azurerm_linux_virtual_machine" "vm-web" {
 
   admin_ssh_key {
     username   = "azureuser"
-    public_key = file("/home/czar/azure_key/vm-web_key.pub")
+    public_key = file(var.ssh_public_key_path)
   }
 
   os_disk {
@@ -68,7 +68,7 @@ resource "azurerm_linux_virtual_machine" "vm-app" {
 
   admin_ssh_key {
     username   = "azureuser"
-    public_key = file("/home/czar/azure_key/vm-web_key.pub")
+    public_key = file(var.ssh_public_key_path)
   }
 
   os_disk {
@@ -110,7 +110,8 @@ resource "azurerm_linux_virtual_machine" "vm-db" {
 
   admin_ssh_key {
     username   = "azureuser"
-    public_key = file("/home/czar/azure_key/vm-web_key.pub")
+    public_key = file(var.ssh_public_key_path)
+
   }
 
   os_disk {
