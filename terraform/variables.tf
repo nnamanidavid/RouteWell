@@ -15,7 +15,7 @@ variable "subnet_web_address" {
 
 variable "subnet_app_address" {
   type    = list(string)
-  default = ["10.123.2.0/28"]
+  default = ["10.123.2.0/26"]
 }
 
 variable "subnet_db_address" {

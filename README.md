@@ -16,7 +16,7 @@ Application Gateway (WAF_v2) ── public IP, subnet-appgw
 Web VM ── subnet-web (10.123.1.0/27)
    │  :8080
    ▼
-App VM ── subnet-app (10.123.2.0/28)
+App VM ── subnet-app (10.123.2.0/26)
    │  :5432
    ▼
 DB VM ── subnet-db (10.123.3.0/28)
@@ -30,29 +30,34 @@ Full diagram: ![RouteWell architecture diagram](docs/architecture-route.png)
 <summary>Eraser diagram-as-code (click to expand)</summary>
 
 ```
-Internet [icon: internet]
+textSize large
+title Routewell architecture
+// RouteWell network architecture
+
+Internet [icon: laptop]
 
 Public Entry Point [icon: azure-application-gateway]
 
-"VNet 10.123.0.0/16" [icon: azure-virtual-networks] {
-  "Web Subnet 10.123.1.0/27" [icon: azure-subnet] {
+"VNet 10.10.0.0/16" [icon: azure-virtual-networks] {
+  "Web Subnet 10.10.1.0/27" [icon: azure-subnet] {
     WebVM [icon: azure-virtual-machine]
   }
-  "App Subnet 10.123.2.0/28" [icon: azure-subnet] {
+  "App Subnet 10.10.2.0/26" [icon: azure-subnet] {
     AppVM [icon: azure-virtual-machine]
   }
-  "DB Subnet 10.123.3.0/28" [icon: azure-subnet] {
+  "DB Subnet 10.10.3.0/28" [icon: azure-subnet] {
     DBVM [icon: azure-sql]
   }
 }
 
+// Connections
 Internet > Public Entry Point
 Public Entry Point > WebVM: 80
 WebVM > AppVM: 8080
 AppVM > DBVM: 5432
 ```
 
-Paste this into [Eraser](https://app.eraser.io) to regenerate or edit the diagram.
+Use this on [Eraser](https://app.eraser.io) to regenerate the diagram.
 </details>
 
 ## Design decisions
@@ -72,15 +77,17 @@ All four fit comfortably inside `10.123.0.0/16`, with most of the address space 
 
 ### NSG rules
 
-| Source | Destination | Port | Reason |
-|---|---|---|---|
-| Internet | AppGateway subnet | 80 | Entry point for all user traffic |
-| GatewayManager | AppGateway subnet | 65200-65535 | Required by Azure for App Gateway v2's own health/management traffic |
-| AppGateway subnet | Web subnet | 80 | Gateway forwards user requests to the web tier |
-| Web subnet | App subnet | 8080 | Web tier proxies API calls to the app tier |
-| App subnet | DB subnet | 5432 | Backend reads/writes data |
-| *(scoped)* | *(each subnet)* | 22 | SSH, scoped to the subnet one tier up — never open to the internet |
-| Any | Web / App / DB subnets | * | Explicit deny-all, below the specific allows — defense-in-depth on top of Azure's default behavior |
+| Source | Destination | Port | Reason | Full justification |
+|---|---|---|---|---|
+| Internet | AppGateway subnet | 80 | Sole path users have into the app | [`docs/design.md` §2.2](docs/design.md#22-nsg-rule-justification) |
+| GatewayManager | AppGateway subnet | 65200-65535 | Required by Azure for App Gateway v2's own health/management traffic | [`docs/design.md` §2.2](docs/design.md#22-nsg-rule-justification) |
+| AppGateway subnet | Web subnet | 80 | Gateway forwards user requests to the web tier | [`docs/design.md` §2.2](docs/design.md#22-nsg-rule-justification) |
+| Web subnet | App subnet | 8080 | Web tier proxies API calls to the app tier | [`docs/design.md` §2.2](docs/design.md#22-nsg-rule-justification) |
+| App subnet | DB subnet | 5432 | Backend reads/writes data | [`docs/design.md` §2.2](docs/design.md#22-nsg-rule-justification) |
+| *(scoped admin source)* | *(each subnet)* | 22 | SSH, scoped to a specific source — never open to the internet | [`docs/design.md` §2.2](docs/design.md#22-nsg-rule-justification) |
+| Any | Web / App / DB subnets | * | Explicit deny-all, below the specific allows — closes the gap Azure's default VNet-allow rule would otherwise leave open | [`docs/design.md` §2.2](docs/design.md#22-nsg-rule-justification) |
+
+Every rule above traces back to a "what breaks without it" justification in the Phase 0 design worksheet — see [`docs/design.md`](docs/design.md) for the full CIDR working and rule-by-rule reasoning.
 
 The database subnet only ever appears as a destination from the app subnet — never from web, never from the internet.
 
@@ -166,6 +173,8 @@ Screenshots for each: [`docs/build.md`](docs/build.md).
 ## Troubleshooting
 
 Two real issues came up during the build, not staged ones. The Application VM size (`Standard_B1s` and several others) turned out to be unavailable across three different Azure regions in a row, eventually resolved by switching to `Standard_D2s_v3` in `westeurope`. Separately, the app tier returned a 500 error on every request post-deployment — traced to a Postgres role that had never actually been created, since `init.sql` failed partway through silently. Full write-up for both, including how each was diagnosed and fixed: [`docs/troubleshooting.md`](docs/troubleshooting.md).
+
+The Postgres issue is additionally documented as a formal incident report (Symptom / Investigation trail / Root cause / Fix / Design reflection) in [`docs/incident-report.md`](docs/incident-report.md).
 
 ## Lessons learned
 
