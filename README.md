@@ -70,7 +70,7 @@ Sized to actual host counts rather than defaulting to `/24` everywhere:
 |---|---|---|---|
 | AppGateway | `10.123.4.0/27` | 27 | App Gateway v2 SKUs need headroom to scale internal instances |
 | Web | `10.123.1.0/27` | 27 | Matches the brief's own sizing example; room to scale to several web VMs |
-| App | `10.123.2.0/28` | 11 | Internal only, fewer instances than web |
+| App | `10.123.2.0/26` | 59 | Internal only, more instances than web |
 | DB | `10.123.3.0/28` | 11 | Only needs 2-3 realistically, but `/28` leaves room for a monitoring agent or replica without resizing later |
 
 All four fit comfortably inside `10.123.0.0/16`, with most of the address space still unused for future growth.
