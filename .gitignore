@@ -17,5 +17,7 @@ app/.env
 
 # --- SSH keys ---
 *.pem
+*.pub
 azure_key/
 
+.env
